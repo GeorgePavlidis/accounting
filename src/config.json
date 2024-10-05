@@ -1,0 +1,8 @@
+{
+  "ing": {
+    "delimiter": ";"
+  },
+  "revolut": {
+    "delimiter": ","
+  }
+}

@@ -1,15 +1,23 @@
+import json
 import os
 
 from google.auth.environment_vars import PROJECT
 from google.cloud import bigquery, storage
-from flask import jsonify
+from flask import jsonify, Config
 
-PROJECT='accounting-101-43740'
 
-delimiter = {
-    'ing': ';',
-    'revolut': ','
-}
+def get_config(config_file="config.json"):
+    """Loads the configuration from a JSON file."""
+    try:
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+            return config
+    except FileNotFoundError:
+        print(f"Config file {config_file} not found.")
+        raise
+    except json.JSONDecodeError:
+        print(f"Error decoding JSON from {config_file}")
+        raise
 
 def load_all_csv_to_bigquery(bucket_name):
     """Loads all CSV files from a Google Cloud Storage bucket into BigQuery,
@@ -22,27 +30,31 @@ def load_all_csv_to_bigquery(bucket_name):
     bq_client = bigquery.Client()
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
+    config = get_config()
 
     print(f"Listing files from bucket: {bucket_name}")
-
     # List all files in the bucket
     blobs = bucket.list_blobs()
 
     # Define BigQuery dataset and table (use environment variables)
     dataset_id = 'landing' # os.getenv('BQ_DATASET')
-    table_id = 'ing' # os.getenv('BQ_TABLE')
 
     for blob in blobs:
+
+        if 'archive' in blob.name.lower():
+            print(f"Skipping archive files")
+            continue
         # Only process files that have a .csv extension
-        if blob.name.endswith('.csv'):
+        if blob.name.endswith('.csv') and blob.name.split('/')[0].lower() in config.keys():
+
             print(f"Processing file: {blob.name}")
 
             gcs_uri = f"gs://{bucket_name}/{blob.name}"
-
+            table_id = blob.name.split('/')[0].lower()
             # BigQuery load job configuration
             job_config = bigquery.LoadJobConfig(
                 source_format=bigquery.SourceFormat.CSV,
-                field_delimiter=';',
+                field_delimiter=config.get(table_id)["delimiter"],
                 skip_leading_rows=1,  # Adjust if your CSV contains a header row
                 autodetect=True,  # Automatically detect the schema
                 encoding="utf-8",
@@ -52,7 +64,8 @@ def load_all_csv_to_bigquery(bucket_name):
 
             try:
                 # Load the CSV file into BigQuery
-                load_job = bq_client.load_table_from_uri(gcs_uri, f'{dataset_id}.{table_id}', job_config=job_config)
+                load_job = bq_client.load_table_from_uri(gcs_uri,
+                                                         f'{dataset_id}.{table_id}', job_config=job_config)
                 load_job.result()  # Wait for the job to complete
 
                 print(f"File {blob.name} successfully loaded into {dataset_id}.{table_id}")
