@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: landing
+    database: accounting-101-437409
+    schema: landing
+    description: Source data
+    tables:
+      - name: ing
+        description: Table containing ing data
+      - name: revolut
+        description: Table containing revolut data

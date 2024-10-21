@@ -1,0 +1,19 @@
+
+version: 2
+
+models:
+  - name: stage_ing
+    description: "initial transformation of ing data"
+#    columns:
+#      - name: id
+#        description: "The primary key for this table"
+#        data_tests:
+#          - unique
+#
+#  - name: my_second_dbt_model_stage
+#    description: "A starter dbt model"
+#    columns:
+#      - name: id
+#        description: "The primary key for this table"
+#        data_tests:
+#          - unique

@@ -1,0 +1,14 @@
+dbt_models:
+  target: dev # This is the default target
+  outputs:
+    dev:
+      dataset: stage
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      keyfile: ../../service_account_key.json # Local
+      location: europe-west4
+      method: service-account
+      priority: interactive 
+      project: accounting-101-437409
+      threads: 4
+      type: bigquery

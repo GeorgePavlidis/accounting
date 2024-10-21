@@ -1,9 +1,7 @@
 import json
-import os
-
-from google.auth.environment_vars import PROJECT
 from google.cloud import bigquery, storage
-from flask import jsonify, Config
+from flask import jsonify
+import datetime
 
 
 def get_config(config_file="config.json"):
@@ -78,10 +76,13 @@ def load_all_csv_to_bigquery(bucket_name):
                 continue  # Continue processing other files if there's an error
 
 
+
+
 def move_to_archive(storage_client, bucket_name, file_name):
     """
     Moves the processed file to an archive folder within the same bucket,
-    preserving the folder structure (e.g., ing/, revolut/).
+    preserving the folder structure (e.g., ing/, revolut/), and appending
+    a timestamp to the file name.
 
     Args:
         storage_client: The initialized Google Cloud Storage client.
@@ -91,8 +92,17 @@ def move_to_archive(storage_client, bucket_name, file_name):
     bucket = storage_client.bucket(bucket_name)
     source_blob = bucket.blob(file_name)
 
-    # Construct the archive path, preserving the original folder structure
-    archive_path = f"archive/{file_name}"
+    # Get current timestamp
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+    # Extract folder structure and file name
+    folder_structure, original_file_name = file_name.rsplit('/', 1)
+
+    # Add timestamp to the file name
+    new_file_name = f"{original_file_name.rsplit('.', 1)[0]}_{timestamp}.{original_file_name.rsplit('.', 1)[1]}"
+
+    # Construct the archive path with the new timestamped file name
+    archive_path = f"archive/{folder_structure}/{new_file_name}"
 
     # Copy the file to the archive folder
     bucket.copy_blob(source_blob, bucket, archive_path)
@@ -125,7 +135,7 @@ def run_main(request):
 
     try:
         # Call the main function to process all CSV files in the bucket
-        load_all_csv_to_bigquery(bucket_name)
+        load_all_csv_to_bigquery("landing-bucket-3301")
         return jsonify({'status': 'success', 'bucket': bucket_name}), 200
     except Exception as e:
         return jsonify({'status': 'failure', 'error': str(e)}), 500
