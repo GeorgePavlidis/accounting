@@ -2,20 +2,18 @@
 -- Use the `ref` function to select from other models
 {{ config(materialized='table') }}
 
-WITH ranked_ing AS (
+WITH ranked_revolut AS (
   SELECT
     *,
-    ROW_NUMBER() OVER (PARTITION BY `Resulting balance`, `Amount _EUR_`, Notifications ORDER BY `Resulting balance`, `Amount _EUR_`, Notifications) AS rownum
-  FROM {{ source('landing', 'ing') }}
+    ROW_NUMBER() OVER (
+      PARTITION BY CAST(Amount AS STRING), CAST(Balance AS STRING), `Started Date`, Description
+      ORDER BY `Started Date`, Description,  CAST(Amount AS STRING),  CAST(Balance AS STRING)
+    ) AS rownum
+  FROM {{ source('landing', 'revolut') }}
 )
 
 SELECT
-    CAST(PARSE_TIMESTAMP('%Y%m%d', CAST(Date AS STRING)) AS TIMESTAMP) AS Date,
-    CASE
-        WHEN `Debit_credit` = 'Debit' THEN CAST(`Amount _EUR_` AS FLOAT64) * -1 / 100
-        ELSE (CAST(`Amount _EUR_` AS FLOAT64) / 100)
-    END AS Amount,
-    CAST(`Resulting balance` AS FLOAT64) / 100 AS Balance,
-    * except (Date, `Amount _EUR_`, `Resulting balance`)
-FROM ranked_ing
+    *,
+    'Revolut' as Bank
+FROM ranked_revolut
 WHERE rownum = 1

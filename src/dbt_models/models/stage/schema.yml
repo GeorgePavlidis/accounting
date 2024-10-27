@@ -4,6 +4,8 @@ version: 2
 models:
   - name: stage_ing
     description: "initial transformation of ing data"
+  - name: stage_revolut
+    description: "initial transformation of revolut data"
 #    columns:
 #      - name: id
 #        description: "The primary key for this table"

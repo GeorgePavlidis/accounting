@@ -10,12 +10,15 @@ WITH ranked_ing AS (
 )
 
 SELECT
+    'ING' as Bank,
+    `Name _ Description` as Description,
+    `Transaction type` as Type,
     CAST(PARSE_TIMESTAMP('%Y%m%d', CAST(Date AS STRING)) AS TIMESTAMP) AS Date,
     CASE
         WHEN `Debit_credit` = 'Debit' THEN CAST(`Amount _EUR_` AS FLOAT64) * -1 / 100
         ELSE (CAST(`Amount _EUR_` AS FLOAT64) / 100)
     END AS Amount,
     CAST(`Resulting balance` AS FLOAT64) / 100 AS Balance,
-    * except (Date, `Amount _EUR_`, `Resulting balance`)
+    * except (Date, `Amount _EUR_`, `Resulting balance`, rownum, `Name _ Description`, `Transaction type`)
 FROM ranked_ing
 WHERE rownum = 1
