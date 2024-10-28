@@ -6,6 +6,8 @@ models:
     description: "initial transformation of ing data"
   - name: stage_revolut
     description: "initial transformation of revolut data"
+  - name: stage_all_transactions
+    description: "all transaction togather in one table"
 #    columns:
 #      - name: id
 #        description: "The primary key for this table"
