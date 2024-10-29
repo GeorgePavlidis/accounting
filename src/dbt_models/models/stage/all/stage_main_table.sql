@@ -13,17 +13,58 @@ filtered_transactions AS (
         Amount,
         Notifications,
         Description,
-        CASE WHEN Amount > 0 AND NOT REGEXP_CONTAINS(Notifications, 'Oranje spaarrekening') THEN Amount ELSE 0 END AS income_amount,
-        CASE WHEN REGEXP_CONTAINS(Notifications, 'Oranje spaarrekening') THEN -Amount ELSE 0 END AS savings_amount,
-        CASE WHEN REGEXP_CONTAINS(Description, 'Hr I Trantas') THEN -Amount ELSE 0 END AS roomate_amount,
-        CASE WHEN REGEXP_CONTAINS(Description, 'CBRE DRES Custodian I BV inzCBRE DRES II Actys R') THEN Amount ELSE 0 END AS rent_amount,
-        CASE WHEN REGEXP_CONTAINS(Description, 'Vattenfall Klantenservice N.V.') THEN Amount ELSE 0 END AS electricity_and_gas_amount,
-        CASE WHEN REGEXP_CONTAINS(Description, 'Waternet') THEN Amount ELSE 0 END AS water_amount,
-        CASE WHEN REGEXP_CONTAINS(Notifications, 'Odido Internet + TV') THEN Amount ELSE 0 END AS internet_amount,
-        CASE WHEN Description='Gemeente Amsterdam Belastingen' THEN Amount ELSE 0 END AS Municipality_Tax_amount,
-        CASE WHEN REGEXP_CONTAINS(Notifications, r'(?i)Unive') THEN Amount ELSE 0 END AS insurance_amount,
-        CASE WHEN REGEXP_CONTAINS(Notifications, 'ODIDO NETHERLANDS B.V.') and REGEXP_CONTAINS(Description, 'Mob') THEN Amount ELSE 0 END AS phone_amount,
-        CASE WHEN REGEXP_CONTAINS(Description, r'(Dirk|Albert Heijn|Jumbo)') THEN Amount ELSE 0 END as supermarket_amount
+        CASE
+            WHEN Amount > 0 AND NOT REGEXP_CONTAINS(Notifications, 'Oranje spaarrekening') THEN Amount ELSE 0
+        END AS income_amount,
+        CASE
+            WHEN REGEXP_CONTAINS(Notifications, 'Oranje spaarrekening') THEN -Amount
+            ELSE 0
+        END AS savings_amount,
+        CASE
+            WHEN REGEXP_CONTAINS(Description, 'Hr I Trantas') THEN Amount
+            ELSE 0
+        END AS roomate_amount,
+        CASE
+            WHEN REGEXP_CONTAINS(Description, 'CBRE DRES Custodian') THEN Amount
+            ELSE 0
+        END AS rent_amount,
+        CASE
+            WHEN REGEXP_CONTAINS(Description, 'Vattenfall Klantenservice N.V.') THEN Amount
+            ELSE 0
+        END AS electricity_and_gas_amount,
+        CASE
+            WHEN REGEXP_CONTAINS(Description, 'Waternet') THEN Amount
+            ELSE 0
+        END AS water_amount,
+        CASE
+            WHEN REGEXP_CONTAINS(Notifications, 'Odido Internet') THEN Amount
+            ELSE 0
+        END AS internet_amount,
+        CASE
+            WHEN Description='Gemeente Amsterdam Belastingen' THEN Amount
+            ELSE 0
+        END AS Municipality_Tax_amount,
+        CASE
+            WHEN REGEXP_CONTAINS(Notifications, r'(?i)Unive') THEN Amount
+            ELSE 0
+        END AS insurance_amount,
+        CASE
+            WHEN REGEXP_CONTAINS(Description, 'ODIDO NETHERLANDS B.V.') and REGEXP_CONTAINS(Notifications, 'Mob')
+            THEN Amount
+            ELSE 0
+        END AS phone_amount,
+        CASE
+            WHEN REGEXP_CONTAINS(Description, r'(Dirk|Albert Heijn|Jumbo)') THEN Amount
+            ELSE 0
+        END as supermarket_amount,
+
+            -- Additional categories for variable expenses
+        CASE WHEN REGEXP_CONTAINS(Description, 'Home Supplies') THEN Amount ELSE 0 END AS home_stuff_amount,
+        CASE WHEN REGEXP_CONTAINS(Description, 'Nespresso') THEN Amount ELSE 0 END AS coffee_amount,
+        CASE WHEN REGEXP_CONTAINS(Description, 'Car Expenses') THEN Amount ELSE 0 END AS car_amount,
+        CASE WHEN REGEXP_CONTAINS(Description, 'Clothing') THEN Amount ELSE 0 END AS clothes_amount,
+        CASE WHEN REGEXP_CONTAINS(Description, 'New Purchases') THEN Amount ELSE 0 END AS new_stuff_amount,
+        CASE WHEN REGEXP_CONTAINS(Description, 'Miscellaneous') THEN Amount ELSE 0 END AS other_amount
 
     FROM original
 ),
@@ -40,21 +81,38 @@ aggregated AS (
         SUM(water_amount) AS Water,
         SUM(internet_amount) AS Internet,
         SUM(Municipality_Tax_amount) AS Municipality_Tax,
-        SUM(CASE WHEN Amount > 0 AND REGEXP_CONTAINS(Description, 'Home Supplies') THEN Amount ELSE 0 END) AS Home_Stuff,
-        SUM(CASE WHEN Amount > 0 AND REGEXP_CONTAINS(Description, 'Coffee Purchase') THEN Amount ELSE 0 END) AS Coffee,
-        SUM(insurance_amount) AS Insurance,
+        SUM(home_stuff_amount) AS Home_Stuff,
+        SUM(coffee_amount) AS Coffee,
+        ROUND(SUM(insurance_amount),2) AS Insurance,
         SUM(phone_amount) AS Phone,
-        SUM(CASE WHEN Amount > 0 AND REGEXP_CONTAINS(Description, 'Car Expenses') THEN Amount ELSE 0 END) AS Car,
-        SUM(CASE WHEN Amount > 0 AND REGEXP_CONTAINS(Description, 'Clothing') THEN Amount ELSE 0 END) AS Clothes,
-        SUM(CASE WHEN Amount > 0 AND REGEXP_CONTAINS(Description, 'New Purchases') THEN Amount ELSE 0 END) AS New_Stuff,
-        SUM(CASE WHEN Amount > 0 AND REGEXP_CONTAINS(Description, 'Miscellaneous') THEN Amount ELSE 0 END) AS Other,
+        SUM(car_amount) AS Car,
+        SUM(clothes_amount) AS Clothes,
+        SUM(new_stuff_amount) AS New_Stuff,
+        SUM(other_amount) AS Other,
         SUM(supermarket_amount) AS sumermarket,
         SUM(Amount) as Balance
+        -- Calculate total_house and total_fixed explicitly
 
     FROM filtered_transactions
     GROUP BY custom_month_start
+),
+
+-- Summing fixed and house-related expenses
+totals_1 AS (
+    SELECT
+        *,
+        Water + Municipality_Tax + Rent + Internet + Electricity_and_Gas + Coffee + Home_Stuff + Roomate AS total_house,
+        Water + Municipality_Tax + Rent + Internet + Electricity_and_Gas + Coffee + Home_Stuff + Roomate
+        + Insurance + phone + Car  AS total_fixed_cost
+    FROM aggregated
+),
+totals AS (
+    SELECT
+        *,
+        total_fixed_cost + total_house AS total_spendings
+    FROM totals_1
 )
 
 SELECT *
-FROM aggregated
+FROM totals
 ORDER BY custom_month_start DESC
