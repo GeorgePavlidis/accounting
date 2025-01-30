@@ -16,7 +16,7 @@ dbt_models:
       dataset: prod
       job_execution_timeout_seconds: 300
       job_retries: 1
-      keyfile: ./service_account_key.json # Local
+      keyfile: $KEYFILE
       location: europe-west4
       method: service-account
       priority: interactive
