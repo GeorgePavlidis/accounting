@@ -17,38 +17,41 @@ jobs:
     name: dbt-run
     runs-on: ubuntu-latest
     steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v2
-#        with:
-#          fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+
+      - name: Install dbt
+        run: |
+          cd dbt
+          pip install dbt-bigquery
+          pip install dbt-core
+          dbt deps --target prod
 #
-#      - name: Set up Python
-#        uses: actions/setup-python@v2
-#        with:
-#          python-version: '3.12'
-#
-#      - name: Install dbt
-#        run: |
-#          cd dbt
-#          pip install dbt-bigquery
-#          pip install dbt-core
-#          dbt deps --target prod
 #      - name: Authenticate using service account
 #        run: echo $KEYFILE > $DBT_PROFILES_DIR/service_account_key.json
 #        shell: bash
 #        env:
 #          KEYFILE: ${{ secrets.DBT_GOOGLE_BIGQUERY_KEYFILE_PROD }}
 
-      - name: dbt-action
-        uses: mwhitaker/dbt-action@master
-        with:
-          dbt_command: "|
-          cd src/dbt_models
-          dbt run --target prod"
+      - name: Run dbt models
+        run: |
+          cd dbt
+          dbt run --target prod
         env:
           KEYFILE: ${{ secrets.DBT_GOOGLE_BIGQUERY_KEYFILE_PROD }}
 
-#      - name: Run dbt models
-#        run: |
-#          cd dbt
-#          dbt run --target prod
+#      - name: dbt-action
+#        uses: mwhitaker/dbt-action@master
+#        with:
+#          dbt_command: "|
+#          cd src/dbt_models
+#          dbt run --target prod"
+#        env:
+#          KEYFILE: ${{ secrets.DBT_GOOGLE_BIGQUERY_KEYFILE_PROD }}
