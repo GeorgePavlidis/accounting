@@ -4,6 +4,7 @@
 WITH aggregated AS (
     SELECT
         custom_month_start,
+        min(show_month) as months,
         SUM(income_amount) AS Income,
         SUM(savings_amount) AS Savings,
         SUM(roomate_amount) AS Roomate,
@@ -21,7 +22,7 @@ WITH aggregated AS (
         SUM(new_stuff_amount) AS New_Stuff,
         SUM(other_amount) AS Other,
         SUM(supermarket_amount) AS sumermarket,
-        SUM(Amount) as Balance
+        SUM(CASE WHEN savings_amount = 0 THEN Amount ELSE 0 END) AS Balance,
         -- Calculate total_house and total_fixed explicitly
 
     FROM  {{ ref('stage_filtered_transactions') }}

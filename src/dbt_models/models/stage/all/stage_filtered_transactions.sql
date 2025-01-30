@@ -2,13 +2,16 @@
 
 WITH original AS (
     SELECT *,
-        DATE_TRUNC(DATE_SUB(DATE(Date), INTERVAL 24 DAY), MONTH) AS custom_month_start
+        DATE_TRUNC(DATE_SUB(DATE(Date), INTERVAL 24 DAY), MONTH) AS custom_month_start,
+        DATE_TRUNC(DATE_ADD(DATE_SUB(DATE(Date), INTERVAL 24 DAY), INTERVAL 1 MONTH), MONTH) AS show_month
+
     FROM {{ ref('stage_all_transactions') }}
 )
 {#        DATE_TRUNC(DATE_ADD(DATE_SUB(DATE(Date), INTERVAL 24 DAY), INTERVAL 1 MONTH), MONTH) AS custom_month_start#}
 -- Filter positive and specific records only once here to avoid repetition
 SELECT
     custom_month_start,
+    show_month,
     Date,
     Amount,
     Notifications,
