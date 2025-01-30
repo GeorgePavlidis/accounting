@@ -46,7 +46,7 @@ jobs:
 
       - name: Run dbt models
         run: |
-          cd dbt
+          cd $DBT_PROFILES_DIR
           dbt run --target prod
         env:
           KEYFILE: ${{ secrets.DBT_GOOGLE_BIGQUERY_KEYFILE_PROD }}
