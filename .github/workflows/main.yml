@@ -44,7 +44,7 @@ jobs:
         uses: mwhitaker/dbt-action@master
         with:
           dbt_command: "|
-          cd /src/dbt_models
+          cd src/dbt_models
           dbt run --target prod"
 
 #      - name: Run dbt models
