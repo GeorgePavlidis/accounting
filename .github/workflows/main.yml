@@ -1,0 +1,52 @@
+name: DBT Core Job
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 3 * * *' # Runs every day at 3 AM
+  workflow_dispatch: # Allows manual triggering
+
+env:
+  DBT_PROFILES_DIR: "${{ github.workspace }}/src/dbt_models"
+  DBT_GOOGLE_BIGQUERY_KEYFILE_PROD: "./dbt-service-account.json"  # Path where the keyfile will be stored
+
+jobs:
+  dbt-run:
+    name: dbt-run
+    runs-on: ubuntu-latest
+    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 0
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v2
+#        with:
+#          python-version: '3.12'
+#
+#      - name: Install dbt
+#        run: |
+#          cd dbt
+#          pip install dbt-bigquery
+#          pip install dbt-core
+#          dbt deps --target prod
+
+      - name: Authenticate using service account
+        run: echo "$KEYFILE" > ./dbt-service-account.json
+        shell: bash
+        env:
+          KEYFILE: ${{ secrets.DBT_GOOGLE_BIGQUERY_KEYFILE_PROD }}
+      - name: dbt-action
+        uses: mwhitaker/dbt-action@master
+        with:
+          dbt_command: "|
+          cd /src/dbt_models
+          dbt run --target prod"
+
+#      - name: Run dbt models
+#        run: |
+#          cd dbt
+#          dbt run --target prod
